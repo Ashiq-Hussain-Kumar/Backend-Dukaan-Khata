@@ -9,7 +9,7 @@ app.set("trust proxy", 1);
 app.use(helmet()); 
 app.use(express.json({ limit: "100kb" })); 
 app.use(cors({
-  origin: process.env.CLIENT_URL,                // was hardcoded "http://localhost:5173"
+  origin: process.env.CLIENT_URL,                
   credentials: true,
 }));
 
