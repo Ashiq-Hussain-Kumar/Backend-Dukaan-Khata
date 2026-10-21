@@ -2,10 +2,11 @@ import mongoose from "mongoose";
 
 
 const productSchema = new mongoose.Schema({
-  shopkeeperId:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"Shopkeeper"
-  },
+  shopkeeperId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Shopkeeper",
+  required: true,
+},
   name:{
     type:String,
     required:true,
@@ -25,14 +26,15 @@ const productSchema = new mongoose.Schema({
     default:0,
     min:0,
   },
-  unit:{
-    type:String,
-    default: "piece"
-  },
+  unit: {
+  type: String,
+  default: "piece",
+  trim: true,
+},
   isActive:{
     type:Boolean,
     default: true,
   }
 },{timestamps:true});
 
-export const Product = mongoose.model("product",productSchema);
+export const Product = mongoose.model("Product",productSchema);

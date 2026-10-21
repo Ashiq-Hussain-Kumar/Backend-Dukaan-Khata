@@ -8,8 +8,9 @@ const customerSchema = new mongoose.Schema({
     trim:true
   },
   phone:{
-    type:Number,
-    required:true
+    type:String,
+    required:true,
+    trim:true
   },
   address:{
     type:String,
@@ -22,9 +23,10 @@ const customerSchema = new mongoose.Schema({
   },
   shopkeeper:{
     type:mongoose.Types.ObjectId,
-    ref:"Shopkeeper"
+    ref:"Shopkeeper",
+    required:true
   }
   
 },{timestamps:true});
 
-export const Customer = mongoose.model("customer",customerSchema);
+export const Customer = mongoose.model("Customer",customerSchema);
