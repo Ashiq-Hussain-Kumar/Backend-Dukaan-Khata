@@ -37,44 +37,57 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 
 //registerShopkeeper
 const registerShopkeeper = asyncHandler(async (req, res) => {
-  //Get Details form ForntEnd
   const { name, phone, password } = req.body;
-const rawEmail = req.body.email;
+  const rawEmail = req.body.email;
 
-if ([name, rawEmail, phone, password].some((f) => typeof f !== "string" || !f.trim())) {
-  throw new ApiError(400, "All fields are required");
-}
+  if ([name, rawEmail, phone, password].some((f) => typeof f !== "string" || !f.trim())) {
+    throw new ApiError(400, "All fields are required");
+  }
 
-const email = rawEmail.trim().toLowerCase();
+  const email = rawEmail.trim().toLowerCase();
 
-const userExists = await Shopkeeper.findOne({ email });
-if (userExists) {
-  throw new ApiError(409, "Shopkeeper with this email already exists");
-}
-  //Register User 
-  //Register User
-  const user = await Shopkeeper.create({ name, email, phone, password });
+  const userExists = await Shopkeeper.findOne({ email });
+  if (userExists) {
+    throw new ApiError(409, "Shopkeeper with this email already exists");
+  }
 
-  try {
-    await sendVerificationLink(user);
-  } catch (error) {
-    console.error("Verification email failed:", error);
-    await Shopkeeper.findByIdAndDelete(user._id); // lets them register again
-    throw new ApiError(502, "Could not send verification email. Please try again later.");
+  // Verification is on unless the environment says "off"
+  const verificationRequired = process.env.EMAIL_VERIFICATION !== "off";
+
+  const user = await Shopkeeper.create({
+    name,
+    email,
+    phone,
+    password,
+    isEmailVerified: !verificationRequired,
+  });
+
+  if (verificationRequired) {
+    try {
+      await sendVerificationLink(user);
+    } catch (error) {
+      console.error("Verification email failed:", error);
+      await Shopkeeper.findByIdAndDelete(user._id); // lets them register again
+      throw new ApiError(502, "Could not send verification email. Please try again later.");
+    }
   }
 
   const createdUser = await Shopkeeper.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -emailVerificationToken -emailVerificationTokenExpires"
   );
-
   if (!createdUser) {
-    throw new ApiError(500, "Something Went Wrong While registering a user");
-
+    throw new ApiError(500, "Something went wrong while registering a user");
   }
-  //Send Response 
-  res.status(201).json(
-    new ApiResponse(201, "User Registered Succesfully, Please Verify your account", createdUser)
-  )
+
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      verificationRequired
+        ? "Registered. Please verify your email."
+        : "Account created. You can log in now.",
+      { user: createdUser, emailVerificationRequired: verificationRequired }
+    )
+  );
 });
 
 //Send Verification Mail
