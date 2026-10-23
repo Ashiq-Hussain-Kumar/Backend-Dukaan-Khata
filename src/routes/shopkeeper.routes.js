@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { registerShopkeeper, loginShopkeeper, logoutShopkeeper, refreshAccessToken,getCurrentUser,verifyEmail, resendVerification } from "../controllers/shopkeeper.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { loginLimiter ,resendLimiter } from "../middlewares/rateLimiter.middleware.js";
+import { loginLimiter ,resendLimiter, registerLimiter } from "../middlewares/rateLimiter.middleware.js";
 import { originCheck } from "../middlewares/originCheck.middleware.js";
 
 
 const userRouter = Router();
 
-userRouter.route("/register").post(registerShopkeeper);
+userRouter.route("/register").post(registerLimiter,registerShopkeeper);
 userRouter.route("/login").post(loginLimiter,loginShopkeeper);
 //secured Routes
 userRouter.route("/logout").post(originCheck,logoutShopkeeper);

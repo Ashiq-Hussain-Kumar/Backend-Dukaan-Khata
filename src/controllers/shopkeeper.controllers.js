@@ -153,7 +153,7 @@ const verifyEmail = asyncHandler(async (req,res) => {
  });
 
  if(!user){
-  throw new ApiError(400,"Invalid or Expired verification link");
+  throw new ApiError(400,"This link is invalid, has expired, or was already used. If you have already verified your email, you can log in");
  }
 
  user.isEmailVerified = true;

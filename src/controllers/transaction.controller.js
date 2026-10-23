@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiErrors.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Transaction } from "../models/transactions.model.js";
 import { Product } from "../models/products.models.js";
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
 
 
 const round = (n) => Math.round(n * 100) / 100;
@@ -47,17 +47,17 @@ const createTransaction = asyncHandler(async (req, res) => {
   }
 
   if (
-    type === "PAYMENT" &&
-    (
-      !payment ||
-      !payment.method?.trim() ||
-      !payment.receivedBy?.trim() ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    )
-  ) {
-    throw new ApiError(400, "Invalid amount or payment details");
-  }
+  type === "PAYMENT" &&
+  (
+    !payment ||
+    typeof payment.method !== "string" || !payment.method.trim() ||
+    typeof payment.receivedBy !== "string" || !payment.receivedBy.trim() ||
+    !Number.isFinite(amount) ||
+    amount <= 0
+  )
+) {
+  throw new ApiError(400, "Invalid amount or payment details");
+}
 
   if (type === "RETURN" && !returnInfo?.reason?.trim()) {
     throw new ApiError(400, "Return reason is required");
