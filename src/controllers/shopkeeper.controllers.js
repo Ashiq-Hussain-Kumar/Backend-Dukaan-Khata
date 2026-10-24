@@ -100,6 +100,7 @@ const sendVerificationEmail = async (email, link) => {
     <a href="${link}">Click Here To Verify</a>`,
   });
 };
+
 const sendVerificationLink = async (user) => {
   const { token, hashedToken } = generateVerificationToken();
 
@@ -214,7 +215,7 @@ const loginShopkeeper = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         "User logged in successfully.",
-        { userId: user._id }        
+        { userId: req.user._id, name: req.user.name, email: req.user.email, phone: req.user.phone }        
       )
     );
 });
@@ -304,13 +305,72 @@ const getCurrentUser = asyncHandler(async (req, res) => {
       "Current user fetched successfully",
       {
         userId: req.user._id,
+        name : req.user.name,
+        email: req.user.email,
+        phone: req.user.phone,
       },
     )
   );
 });
 
+const isDemoAccount = (user) =>
+  Boolean(process.env.DEMO_ACCOUNT_EMAIL) &&
+  user.email === process.env.DEMO_ACCOUNT_EMAIL.toLowerCase();
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name, phone } = req.body;
+
+  if (typeof name !== "string" || typeof phone !== "string") throw new ApiError(400, "Name and phone are required");
+  const cleanName = name.trim();
+  const cleanPhone = phone.trim();
+  if (cleanName.length < 2 || cleanName.length > 50) throw new ApiError(400, "Name must be 2 to 50 characters");
+  if (!cleanPhone) throw new ApiError(400, "Phone is required");
+  if (isDemoAccount(req.user)) throw new ApiError(403, "Profile changes are disabled for the demo account");
+
+  const user = await Shopkeeper.findByIdAndUpdate(
+    req.user._id,
+    { $set: { name: cleanName, phone: cleanPhone } },
+    { new: true, runValidators: true }
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, "Profile updated successfully", {
+      userId: user._id, name: user.name, email: user.email, phone: user.phone,
+    })
+  );
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (typeof currentPassword !== "string" || typeof newPassword !== "string" || !currentPassword || !newPassword)
+    throw new ApiError(400, "Current and new password are required");
+  if (newPassword.length < 8 || newPassword.length > 72)
+    throw new ApiError(400, "New password must be 8 to 72 characters");   // bcrypt ignores everything after 72 bytes
+  if (newPassword === currentPassword)
+    throw new ApiError(400, "New password must be different from the current one");
+  if (isDemoAccount(req.user)) throw new ApiError(403, "Password changes are disabled for the demo account");
+
+  const user = await Shopkeeper.findById(req.user._id);   // verifyJWT removed the password field, so load it again
+  if (!(await user.isPasswordCorrect(currentPassword)))
+    throw new ApiError(400, "Current password is incorrect");   // 400, not 401, see the note below
+
+  user.password = newPassword;
+  await user.save();   // your pre("save") hook hashes it
+
+  // New tokens for this browser. The old refresh token is replaced, so other sessions can no longer refresh.
+  const { accessToken, refreshToken } = await generateAccessTokenAndRefreshToken(user._id);
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(new ApiResponse(200, "Password changed successfully"));
+});
 
 
-export { registerShopkeeper, loginShopkeeper, logoutShopkeeper, refreshAccessToken, getCurrentUser, verifyEmail, resendVerification };
+
+
+export { registerShopkeeper, loginShopkeeper, logoutShopkeeper, refreshAccessToken, getCurrentUser, verifyEmail, resendVerification, updateProfile, changePassword };
 
 

@@ -29,3 +29,10 @@ export const registerLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: "Too many accounts created from this network. Please try again later." },
 });
+export const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 5,                 // max 5 password change requests per window
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { success: false, message: "Too many password change attempts. Please try again later." },
+});

@@ -27,6 +27,7 @@ try {
    
 
   req.user = authUser;
+
  return next();
     
 });
