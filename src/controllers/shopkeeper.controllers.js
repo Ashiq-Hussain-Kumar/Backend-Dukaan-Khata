@@ -66,7 +66,6 @@ const registerShopkeeper = asyncHandler(async (req, res) => {
     try {
       await sendVerificationLink(user);
     } catch (error) {
-      console.error("Verification email failed:", error);
       await Shopkeeper.findByIdAndDelete(user._id); // lets them register again
       throw new ApiError(502, "Could not send verification email. Please try again later.");
     }
@@ -126,7 +125,7 @@ const resendVerification = asyncHandler(async (req, res) => {
     try {
       await sendVerificationLink(user);
     } catch (error) {
-      console.error("Resend verification failed:", error);
+      
       throw new ApiError(502, "Could not send verification email. Please try again later.");
     }
   }
@@ -184,6 +183,8 @@ const loginShopkeeper = asyncHandler(async (req, res) => {
     email: email.trim().toLowerCase(),
   });
 
+
+
   if (!user) {
     throw new ApiError(401, "Invalid email or password.");
   }
@@ -215,7 +216,7 @@ const loginShopkeeper = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         "User logged in successfully.",
-        { userId: req.user._id, name: req.user.name, email: req.user.email, phone: req.user.phone }        
+        { userId: user._id, name: user.name, email: user.email, phone: user.phone }        
       )
     );
 });
